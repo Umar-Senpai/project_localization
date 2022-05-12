@@ -1,0 +1,5 @@
+split_threshold: 0.1
+inter_threshold: 0.1
+minimum_points: 6
+distance_threshold: 0.1
+angle_threshold: 10

@@ -1,0 +1,19 @@
+<launch>
+
+     <!-- Bagfiles  -->
+    <include file="$(find probabilistic_basics)/launch/basics.launch">
+	    <arg name="dataset3" default="true"/>
+    </include>
+    
+    <!-- Split and merge -->
+    <node name="split_and_merge" pkg="project_localization" type="splitandmergenode.py" output="screen">
+        <rosparam command="load" file="$(find project_localization)/config/params.yaml"/>
+    </node>
+
+    <!-- RViz  -->
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find project_localization)/config/custom.rviz" output="screen"/>
+
+    <!-- EKF node-->
+    <node pkg="project_localization" type="node.py" name="ekf" output="screen"/>
+
+</launch>
