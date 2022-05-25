@@ -77,9 +77,9 @@ class SplitAndMergeNode(object):
         self.pub_corner_gt = rospy.Publisher("corners_gt", Marker, queue_size=2)
         
         # Subscribers
-        self.sub_scan = rospy.Subscriber("scan", LaserScan, self.laser_callback)
+        # self.sub_scan = rospy.Subscriber("scan", LaserScan, self.laser_callback)
 
-        # self.sub_scan = rospy.Subscriber("turtlebot/rplidar/scan", LaserScan, self.laser_callback)
+        self.sub_scan = rospy.Subscriber("turtlebot/rplidar/scan", LaserScan, self.laser_callback)
         self.split_thres = rospy.get_param("~split_threshold")   # distance threshold to provoke a split
         self.inter_thres = rospy.get_param("~inter_threshold")   # maximum distance between consecutive points in a line
         self.min_points = rospy.get_param("~minimum_points")     # minimum number of points in a line
@@ -117,7 +117,14 @@ class SplitAndMergeNode(object):
         for j in range(len(lines)-1):
             # if intersect(lines[j,0:2], lines[j,2:], lines[j+1,0:2], lines[j+1,2:]):
             if distance(lines[j, 2:], lines[j+1, 0:2]) < 0.1 or distance(lines[j, 0:2], lines[j+1, 2:]) < 0.1:
-                corners = np.append(corners, seg_intersect(lines[j,0:2], lines[j,2:], lines[j+1,0:2], lines[j+1,2:]), axis=0)
+                m1 = (lines[j, 3] - lines[j, 1])/(lines[j,2]-lines[j,0])
+                m2 = (lines[j+1, 3] - lines[j+1, 1])/(lines[j+1,2]-lines[j+1,0])
+                theta = abs(np.rad2deg(np.arctan2((m1-m2), (1+m1*m2))))
+                print('---------- ANGLE LINES', (theta))
+                print('---------- DISTANCE LINES', distance(lines[j, 0:2], lines[j, 2:]), distance(lines[j+1, 0:2], lines[j+1, 2:]))
+                if theta > 80 and theta < 100 and  distance(lines[j, 0:2], lines[j, 2:]) > 0.2 and distance(lines[j+1, 0:2], lines[j+1, 2:]) > 0.2:
+                # if theta > 80 and theta < 100:
+                    corners = np.append(corners, seg_intersect(lines[j,0:2], lines[j,2:], lines[j+1,0:2], lines[j+1,2:]), axis=0)
             # for i in range(j+1, len(lines)-1):
                 # if intersect(lines[i,0:2], lines[i,2:], lines[i+1,0:2], lines[i+1,2:]):
                 # corners = np.append(corners, seg_intersect(lines[j,0:2], lines[j,2:], lines[i,0:2], lines[i,2:]), axis=0)
@@ -131,7 +138,7 @@ class SplitAndMergeNode(object):
                             [2.1,-3.9],[12.7,-1.3],
                             [7.7,-7.6],[10.35,3]])
 
-        publish_corners(corners, self.pub_corner, frame='base_footprint',scale=0.3)
+        publish_corners(corners[1:], self.pub_corner, frame='base_footprint',scale=0.3)
         publish_corners(corners_gt, self.pub_corner_gt, frame='odom',scale=0.3, color=(0, 1, 0, 1))
 
         '''Publish results'''

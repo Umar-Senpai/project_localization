@@ -10,7 +10,7 @@ import tf
 # ROS messages
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
-from visualization_msgs.msg import Marker
+from visualization_msgs.msg import Marker, MarkerArray
 
 # Maths
 import numpy as np
@@ -39,14 +39,17 @@ class LocalizationNode(object):
         self.pub_corners = rospy.Publisher("cornersekf", Marker, queue_size=2)
         self.pub_odom = rospy.Publisher("predicted_odom", Odometry,
                                         queue_size=2)
+        self.pub_odom_prediction = rospy.Publisher("odom_prediction", Odometry,
+                                        queue_size=2)
         self.pub_uncertainity = rospy.Publisher("uncertainity", Marker,
                                                 queue_size=2)
+        self.pub_corner_uncer = rospy.Publisher("crn_uncertainity", MarkerArray, queue_size=2)
 
         # Subscribers
         # self.sub_laser = rospy.Subscriber("scan", LaserScan, self.cbk_laser)
         self.sub_corners = rospy.Subscriber("corners", Marker, self.cbk_corners)
-        # self.sub_odom = rospy.Subscriber("turtlebot/odom", Odometry, self.cbk_odom)
-        self.sub_odom = rospy.Subscriber("odom", Odometry, self.cbk_odom)
+        self.sub_odom = rospy.Subscriber("turtlebot/odom", Odometry, self.cbk_odom)
+        # self.sub_odom = rospy.Subscriber("odom", Odometry, self.cbk_odom)
 
         # TF
         self.tfBroad = tf.TransformBroadcaster()
@@ -198,7 +201,7 @@ class LocalizationNode(object):
         xr, Pr, Prm = None, None, None
         if self.new_odom:
             # Make prediction (copy needed to ensure no paral thread)
-            # self.ekf.predict(self.uk.copy())
+            self.ekf.predict(self.uk.copy())
             print('---- self.uk', self.uk)
             [xr, Pr, Prm] = self.ekf_slam.prediction(self.uk.copy(), self.Qk, 1.0)
             self.ekf_slam.applyPrediction(xr, Pr, Prm)
@@ -206,17 +209,19 @@ class LocalizationNode(object):
             self.new_odom = False
             self.pub = True
             self.time = self.odomtime
+            odom = funcs.get_odom_msg(self.ekf.xk)
+            self.pub_odom_prediction.publish(odom)
 
         # Data association and update
         if self.new_laser:
             # Make data association and update
             temp = self.ekf_slam.is_data_associated(self.lines.copy())
             # temp = self.ekf.data_association(self.lines.copy())
-            associd, Hk_list, Vk_list, Sk_list, Rk_list = temp
+            associd, distance = temp
             for index, corner in enumerate(self.lines):
-                if corner[0] == 0 and corner[1] == 0:
-                    print('HERE123')
-                    continue
+                # if corner[0] == 0 and corner[1] == 0:
+                #     print('HERE123')
+                #     continue
                 if index in associd.keys(): #Known landmark! Do Upate
                     idx = associd[index]
                     xr = self.ekf_slam.xr()
@@ -228,10 +233,10 @@ class LocalizationNode(object):
                                         PingerWithIDMeasurement.Jhxr(xr, xl),
                                         PingerWithIDMeasurement.Jhxl(xr, xl),
                                         PingerWithIDMeasurement.Jhv())
-                    print("-----, APPLY UPDATE")
+                    print("-----, APPLY UPDATE", idx, index)
                     self.ekf_slam.applyUpdate(x, P)
-                else: #Unknown landmark! Do initialization
-                    
+                elif distance[index] > 1.0: #Unknown landmark! Do initialization
+                # else:
                     idx = self.ekf_slam.add_landmark(PingerWithIDMeasurement.g(self.ekf_slam.xr(), PingerWithIDMeasurement.h([0,0,0], corner)),
                                         PingerWithIDMeasurement.Jgxr(self.ekf_slam.xr(), PingerWithIDMeasurement.h([0,0,0], corner)),
                                         PingerWithIDMeasurement.Jgz(self.ekf_slam.xr(), PingerWithIDMeasurement.h([0,0,0], corner)), 
@@ -264,6 +269,7 @@ class LocalizationNode(object):
         # odom, ellipse, trans, rot, dummy = funcs.get_ekf_msgs(self.ekf)
 
         odom, ellipse, trans, rot, dummy = funcs.get_ekf_slam_msgs(self.ekf_slam)
+        funcs.publish_arrays(self.ekf_slam.Pmm(), self.pub_corner_uncer, self.ekf_slam)
 
         # print('----', ellipse)
 

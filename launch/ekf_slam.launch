@@ -1,9 +1,13 @@
 <launch>
 
      <!-- Bagfiles  -->
-    <include file="$(find probabilistic_basics)/launch/basics.launch">
+    <!-- <include file="$(find probabilistic_basics)/launch/basics.launch">
 	    <arg name="dataset3" default="true"/>
-    </include>
+    </include> -->
+
+    <env name="LIBGL_ALWAYS_SOFTWARE" value="true" />
+
+    <param name="robot_description" command="cat $(find turtlebot_description)/urdf/turtlebot.urdf" />
     
     <!-- Split and merge -->
     <node name="split_and_merge" pkg="project_localization" type="splitandmergenode.py" output="screen">

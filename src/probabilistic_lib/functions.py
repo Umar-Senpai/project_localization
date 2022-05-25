@@ -505,6 +505,25 @@ def get_ekf_msgs(ekf):
     return msg_odom, msg_ellipse, trans, rotat, room_map_points
 
 
+def get_odom_msg(xr):
+    # Time
+    time = rospy.Time.now()
+
+    # Odometry
+    msg_odom = Odometry()
+    msg_odom.header.stamp = time
+    msg_odom.header.frame_id = 'world'
+    msg_odom.pose.pose.position.x = xr[0]
+    msg_odom.pose.pose.position.y = xr[1]
+    msg_odom.pose.pose.position.z = 0
+    quat = quaternion_from_yaw(xr[2])
+    msg_odom.pose.pose.orientation.x = quat[0]
+    msg_odom.pose.pose.orientation.y = quat[1]
+    msg_odom.pose.pose.orientation.z = quat[2]
+    msg_odom.pose.pose.orientation.w = quat[3]
+    return msg_odom
+
+
 ########################################################################
 def get_ekf_slam_msgs(ekf):
     """
@@ -597,6 +616,45 @@ def get_ekf_slam_msgs(ekf):
                 room_map_points = np.vstack([room_map_points, aux])
 
     return msg_odom, msg_ellipse, trans, rotat, room_map_points
+
+
+############################################################################
+def publish_arrays(arrays, pub, ekf, frame='world', ns='none', time=None,
+                  color=(0, 1, 0),marker_id=0,scale=0.1):
+        
+        #for index in range(len(corners)):
+        markerArray = MarkerArray()
+        for index in range(ekf.n_landmarks_):
+            # Uncertainity
+            # print('--------- ASD', index, ekf.n_landmarks_)
+            uncert = ekf.Pll(index).copy()
+            val, vec = np.linalg.eigh(uncert)
+            yaw = np.arctan2(vec[1, 0], vec[0, 0])
+            quat = quaternion_from_yaw(yaw)
+            msg_ellipse = Marker()
+            msg_ellipse.id = marker_id
+            msg_ellipse.header.frame_id = frame
+            msg_ellipse.header.stamp = rospy.Time.now()
+            msg_ellipse.type = Marker.CYLINDER
+            msg_ellipse.pose.position.x = ekf.xl(index)[0]
+            msg_ellipse.pose.position.y = ekf.xl(index)[1]
+            msg_ellipse.pose.position.z = -0.1  # below others
+            msg_ellipse.pose.orientation.x = quat[0]
+            msg_ellipse.pose.orientation.y = quat[1]
+            msg_ellipse.pose.orientation.z = quat[2]
+            msg_ellipse.pose.orientation.w = quat[3]
+            msg_ellipse.scale.x = 2 * math.sqrt(val[0])
+            msg_ellipse.scale.y = 2 * math.sqrt(val[1])
+            msg_ellipse.scale.z = 0.05
+            msg_ellipse.color.a = 0.6
+            msg_ellipse.color.r = 0.0
+            msg_ellipse.color.g = 0.7
+            msg_ellipse.color.b = 0.7
+            # for i in range(len(arrays[index])):
+            #     mrk.points.append(Point(arrays[index][i][1], arrays[index][i][0], 0))
+            markerArray.markers.append(msg_ellipse)
+            marker_id = marker_id+1
+        pub.publish(markerArray)
 
 
 ########################################################################

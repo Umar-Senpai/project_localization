@@ -314,6 +314,7 @@ class EKFSlam:
         # chi_thres = 0.103  # chi square 2DoF 95% confidence
         chi_thres = 0.103
         associd = dict()
+        distance = dict()
         Hk_list = list()
         Vk_list = list()
         Sk_list = list()
@@ -374,5 +375,6 @@ class EKFSlam:
                  Vk_list.append(minv)
                  Sk_list.append(minS)
                  Rk_list.append(self.Rk)
+            distance[i] = minD
 
-        return associd, Hk_list, Vk_list, Sk_list, Rk_list
+        return associd, distance
