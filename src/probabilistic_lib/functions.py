@@ -17,6 +17,8 @@ from geometry_msgs.msg import Point, PoseArray, PoseStamped, Pose
 
 # Transformations
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
+from std_msgs.msg import Header, ColorRGBA
+
 
 
 ###############################################################################
@@ -731,3 +733,54 @@ def get_polar_line(line, odom=[0.0, 0.0, 0.0]):
 
     # Return in the vehicle frame
     return np.array([np.abs(dist), angle_wrap(ang - odom[2])])
+
+
+def publish_path(path, marker_pub, index):
+    if len(path) > 1:
+        # print("Path has been published!")
+        m = Marker()
+        m.header.frame_id = 'odom'
+        m.header.stamp = rospy.Time.now()
+        m.id = 0
+        m.type = Marker.LINE_STRIP
+        m.ns = 'path'
+        m.action = Marker.DELETE
+        m.lifetime = rospy.Duration(0)
+        marker_pub.publish(m)
+
+        m.action = Marker.ADD
+        m.scale.x = 0.1
+        m.scale.y = 0.0
+        m.scale.z = 0.0
+        
+        m.pose.orientation.x = 0
+        m.pose.orientation.y = 0
+        m.pose.orientation.z = 0
+        m.pose.orientation.w = 1
+        
+        color_red = ColorRGBA()
+        color_red.r = 1
+        color_red.g = 0
+        color_red.b = 0
+        color_red.a = 1
+        color_blue = ColorRGBA()
+        color_blue.r = 0
+        color_blue.g = 0
+        color_blue.b = 1
+        color_blue.a = 1
+        color_green = ColorRGBA()
+        color_green.r = 0
+        color_green.g = 1
+        color_green.b = 0
+        color_green.a = 1
+        color_array = [color_red, color_blue, color_green]
+
+        for n in path:
+            p = Point()
+            p.x = n[0]
+            p.y = n[1]
+            p.z = 0.0
+            m.points.append(p)
+            m.colors.append(color_array[index])
+        
+        marker_pub.publish(m)

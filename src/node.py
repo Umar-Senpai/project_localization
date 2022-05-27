@@ -35,7 +35,9 @@ class LocalizationNode(object):
         """Initialize publishers, subscribers and the filter."""
         # Publishers
         self.pub_laser = rospy.Publisher("ekf_laser", LaserScan, queue_size=2)
-        self.pub_lines = rospy.Publisher("linesekf", Marker, queue_size=2)
+        self.pub_pred_line = rospy.Publisher("linespred", Marker, queue_size=2)
+        self.pub_gt_line = rospy.Publisher("linesgt", Marker, queue_size=2)
+        self.pub_ekf_line = rospy.Publisher("linesupdate", Marker, queue_size=2)
         self.pub_corners = rospy.Publisher("cornersekf", Marker, queue_size=2)
         self.pub_odom = rospy.Publisher("predicted_odom", Odometry,
                                         queue_size=2)
@@ -57,6 +59,9 @@ class LocalizationNode(object):
         # Incremental odometry
         self.last_odom = None
         self.odom = None
+        self.prediction_odom_line = []
+        self.ground_truth_line = []
+        self.ekf_lines = []
 
         # Times
         self.time = rospy.Time(0)
@@ -145,12 +150,16 @@ class LocalizationNode(object):
             lyaw = funcs.yaw_from_quaternion(
                 self.last_odom.pose.pose.orientation)
 
+            self.ground_truth_line.append([msg.pose.pose.position.x, msg.pose.pose.position.y])
+            funcs.publish_path(self.ground_truth_line, self.pub_gt_line, 1)
+
             # Odometry seen from vehicle frame
             self.uk = np.array([delta_x * np.cos(lyaw) +
                                 delta_y * np.sin(lyaw),
                                 -delta_x * np.sin(lyaw) +
                                 delta_y * np.cos(lyaw),
                                 funcs.angle_wrap(yaw - lyaw)])
+            self.uk = self.uk + 0.001*np.random.rand(3,)
 
             # Flag available
             self.new_odom = True
@@ -210,7 +219,9 @@ class LocalizationNode(object):
             self.pub = True
             self.time = self.odomtime
             odom = funcs.get_odom_msg(self.ekf.xk)
+            self.prediction_odom_line.append(self.ekf.xk)
             self.pub_odom_prediction.publish(odom)
+            funcs.publish_path(self.prediction_odom_line, self.pub_pred_line, 0)
 
         # Data association and update
         if self.new_laser:
@@ -257,8 +268,8 @@ class LocalizationNode(object):
     def publish_results(self):
         """Publishe results from the filter."""
         # Map of the room (ground truth)
-        funcs.publish_lines(self.ekf.map, self.pub_lines, frame='world',
-                            ns='map', color=(0, 1, 0))
+        # funcs.publish_lines(self.ekf.map, self.pub_lines, frame='world',
+        #                     ns='map', color=(0, 1, 0))
 
         utilsFunc.publish_corners((self.ekf_slam.x()[3:]).reshape(self.ekf_slam.n_landmarks_, 2), self.pub_corners, frame='world', 
                             scale=0.3, color=(1, 1, 0, 1))
@@ -270,6 +281,8 @@ class LocalizationNode(object):
 
         odom, ellipse, trans, rot, dummy = funcs.get_ekf_slam_msgs(self.ekf_slam)
         funcs.publish_arrays(self.ekf_slam.Pmm(), self.pub_corner_uncer, self.ekf_slam)
+        self.ekf_lines.append([self.ekf_slam.x_[0], self.ekf_slam.x_[1]])
+        funcs.publish_path(self.ekf_lines, self.pub_ekf_line, 2)
 
         # print('----', ellipse)
 
