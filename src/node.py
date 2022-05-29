@@ -149,7 +149,7 @@ class LocalizationNode(object):
                 self.last_odom.pose.pose.orientation)
 
             self.ground_truth_line.append([msg.pose.pose.position.x, msg.pose.pose.position.y])
-            funcs.publish_path(self.ground_truth_line, self.pub_gt_line, 1)
+            funcs.publish_path(self.ground_truth_line, self.pub_gt_line, 0)
 
             # Odometry seen from vehicle frame
             self.uk = np.array([delta_x * np.cos(lyaw) +
@@ -218,7 +218,7 @@ class LocalizationNode(object):
             odom = funcs.get_odom_msg(self.ekf.xk)
             self.prediction_odom_line.append(self.ekf.xk)
             self.pub_odom_prediction.publish(odom)
-            funcs.publish_path(self.prediction_odom_line, self.pub_pred_line, 0)
+            funcs.publish_path(self.prediction_odom_line, self.pub_pred_line,2)
 
         # Data association and update
         if self.new_laser:
@@ -279,7 +279,7 @@ class LocalizationNode(object):
         odom, ellipse, trans, rot, dummy = funcs.get_ekf_slam_msgs(self.ekf_slam)
         funcs.publish_arrays(self.ekf_slam.Pmm(), self.pub_corner_uncer, self.ekf_slam)
         self.ekf_lines.append([self.ekf_slam.x_[0], self.ekf_slam.x_[1]])
-        funcs.publish_path(self.ekf_lines, self.pub_ekf_line, 2)
+        funcs.publish_path(self.ekf_lines, self.pub_ekf_line, 1)
 
         # print('----', ellipse)
 
