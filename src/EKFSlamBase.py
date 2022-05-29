@@ -122,7 +122,7 @@ class EKFSlam:
 
     def Plm(self, idx):
         '''
-        return a numpy view of shape (s, n * s) representing a landmark-mark correlation matrix where n is the number of landmarks and s is the landmark size
+        return a numpy view of shape (s, n * s) representing a landmark-map correlation matrix where n is the number of landmarks and s is the landmark size
         Input:
             - idx: an integer representing the landmark position in the map
         '''
@@ -237,7 +237,7 @@ class EKFSlam:
             - x: np array of shape (3 + n*s,) representing the updated state
             - P: np matrix of shape (3 + n*s, 3 + n*s) representing the updated state covariance
         '''
-        print('______', self.n_landmarks_)
+        #print('______', self.n_landmarks_)
         self.x_[0:3 + self.n_landmarks_ * self.landmark_size_] = x
         self.P_[0:3 + self.n_landmarks_ * self.landmark_size_, 0:3 + self.n_landmarks_ * self.landmark_size_] = P
 
@@ -322,11 +322,11 @@ class EKFSlam:
 
 
         # For each observed line
-        print('\n-------- Associations --------')
+        #print('\n-------- Associations --------')
         for i in range(0, corners.shape[0]):
 
             # The polar lines are already in the robot frame
-            z = PingerWithIDMeasurement.h([0,0,0], corners[i])
+            z = PingerWithIDMeasurement.h([0,0,0], corners[i]) #Converting Corners in distance and angle 
             # z = funcs.get_polar_line(corners[i],[0,0,0])
 
             # Variables for finding minimum
@@ -350,11 +350,11 @@ class EKFSlam:
                 # Mahalanobis distance
                 D = np.transpose(v)@ np.linalg.inv(S) @v
 
-                # Optional: Check if observed line is longer than map
+                # Optional: Check if observed corner is longer than map
                 ########################################################
                 islonger = False
 
-                # Check if the obseved line is the one with smallest
+                # Check if the obseved corner is the one with smallest
                 # mahalanobis distance
                 if np.sqrt(D) < minD and not islonger:
                      minj = j
@@ -366,9 +366,9 @@ class EKFSlam:
                      minD = D
 
             # Minimum distance below threshold
-            print('---- minD', minD)
+            #print('---- minD', minD)
             if minD < chi_thres:
-                 print("\t{} -> {}".format(minz, minh))
+                 #print("\t{} -> {}".format(minz, minh))
                  # Append results
                  associd[i] = minj
                  Hk_list.append(minH)

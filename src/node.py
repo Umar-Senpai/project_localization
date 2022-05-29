@@ -32,22 +32,19 @@ class LocalizationNode(object):
     # ==========================================================================
     def __init__(self, xinit, odom_lin_sigma, odom_ang_sigma, meas_rng_noise,
                  meas_ang_noise, rob2sensor):
-        """Initialize publishers, subscribers and the filter."""
-        # Publishers
+        
+        '''Publishers'''
         self.pub_laser = rospy.Publisher("ekf_laser", LaserScan, queue_size=2)
         self.pub_pred_line = rospy.Publisher("linespred", Marker, queue_size=2)
         self.pub_gt_line = rospy.Publisher("linesgt", Marker, queue_size=2)
         self.pub_ekf_line = rospy.Publisher("linesupdate", Marker, queue_size=2)
         self.pub_corners = rospy.Publisher("cornersekf", Marker, queue_size=2)
-        self.pub_odom = rospy.Publisher("predicted_odom", Odometry,
-                                        queue_size=2)
-        self.pub_odom_prediction = rospy.Publisher("odom_prediction", Odometry,
-                                        queue_size=2)
-        self.pub_uncertainity = rospy.Publisher("uncertainity", Marker,
-                                                queue_size=2)
+        self.pub_odom = rospy.Publisher("predicted_odom", Odometry,queue_size=2)
+        self.pub_odom_prediction = rospy.Publisher("odom_prediction", Odometry,queue_size=2)
+        self.pub_uncertainity = rospy.Publisher("uncertainity", Marker,queue_size=2)
         self.pub_corner_uncer = rospy.Publisher("crn_uncertainity", MarkerArray, queue_size=2)
 
-        # Subscribers
+        '''Subscribers'''
         # self.sub_laser = rospy.Subscriber("scan", LaserScan, self.cbk_laser)
         self.sub_corners = rospy.Subscriber("corners", Marker, self.cbk_corners)
         self.sub_odom = rospy.Subscriber("turtlebot/odom", Odometry, self.cbk_odom)
@@ -90,17 +87,17 @@ class LocalizationNode(object):
         self.robot2sensor = np.array(rob2sensor)
         # print(self.robot2sensor)
 
-    # ==========================================================================
-    def cbk_laser(self, msg):
-        """Republish laser scan in the EKF solution frame."""
-        msg.header.frame_id = 'sensor'
-        self.pub_laser.publish(msg)
+    # # ==========================================================================
+    # def cbk_laser(self, msg):
+    #     """Republish laser scan in the EKF solution frame."""
+    #     msg.header.frame_id = 'sensor'
+    #     self.pub_laser.publish(msg)
 
     # ==========================================================================
     def cbk_odom(self, msg):
         """Publish tf and calculate incremental odometry."""
         # Save time
-        print('-- ODOM CALLBACK')
+        #print('-- ODOM CALLBACK')
         self.odomtime = msg.header.stamp
         self.odom = msg
 
@@ -139,11 +136,12 @@ class LocalizationNode(object):
 
         # Incremental odometry
         if self.last_odom is not None:
-            print('INSIDE IF')
+            #print('INSIDE IF')
 
             # Increment computation
             delta_x = msg.pose.pose.position.x - \
                 self.last_odom.pose.pose.position.x
+            #print(delta_x,  msg.pose.pose.position.x,self.last_odom.pose.pose.position.x)
             delta_y = msg.pose.pose.position.y - \
                 self.last_odom.pose.pose.position.y
             yaw = funcs.yaw_from_quaternion(msg.pose.pose.orientation)
@@ -170,24 +168,22 @@ class LocalizationNode(object):
 
     # ==========================================================================
     def cbk_corners(self, msg):
-        """Republish the laser scam in the /robot frame."""
+        """Reading the corners and storing them into the variable self.lines"""
         # Save time
         self.linestime = msg.header.stamp
-
-        print('--- CORNERS SUBSCRIBE', msg.points)
 
         # Get the lines
         if len(msg.points) > 0:
 
-            # Structure for the lines
+            # Structure for the corners
             self.lines = np.zeros((len(msg.points), 2))
 
             for i in range(0, len(msg.points)):
                 # Get start and end points
-                pt1 = msg.points[i]
+                #pt1 = msg.points[i]
 
                 # Transform to robot frame
-                pt1R = funcs.comp(self.robot2sensor, [pt1.x, pt1.y, 0.0])
+                # pt1R = funcs.comp(self.robot2sensor, [pt1.x, pt1.y, 0.0])
 
                 # Append to line list
                 # self.lines[i, :2] = pt1R[:2]
@@ -200,7 +196,8 @@ class LocalizationNode(object):
             # funcs.publish_lines(self.lines, self.pub_lines, frame='robot',
             #                     time=msg.header.stamp, ns='lines_robot',
             #                     color=(0, 0, 1))
-            print('----- CORNERS', self.lines)
+            print(f'SENSOR: {len(self.lines)} corners received')
+            print(self.lines)
             # utilsFunc.publish_corners(self.lines, self.pub_corners, frame='robot', scale=0.3)
 
     # ==========================================================================
@@ -211,7 +208,7 @@ class LocalizationNode(object):
         if self.new_odom:
             # Make prediction (copy needed to ensure no paral thread)
             self.ekf.predict(self.uk.copy())
-            print('---- self.uk', self.uk)
+            ##print('---- self.uk', self.uk)
             [xr, Pr, Prm] = self.ekf_slam.prediction(self.uk.copy(), self.Qk, 1.0)
             self.ekf_slam.applyPrediction(xr, Pr, Prm)
             self.last_odom = self.odom  # new start odom for incremental
@@ -229,7 +226,7 @@ class LocalizationNode(object):
             temp = self.ekf_slam.is_data_associated(self.lines.copy())
             # temp = self.ekf.data_association(self.lines.copy())
             associd, distance = temp
-            for index, corner in enumerate(self.lines):
+            for index, corner in enumerate(self.lines): #self.lines = self.corners
                 # if corner[0] == 0 and corner[1] == 0:
                 #     print('HERE123')
                 #     continue
@@ -244,7 +241,7 @@ class LocalizationNode(object):
                                         PingerWithIDMeasurement.Jhxr(xr, xl),
                                         PingerWithIDMeasurement.Jhxl(xr, xl),
                                         PingerWithIDMeasurement.Jhv())
-                    print("-----, APPLY UPDATE", idx, index)
+                    ##print("-----, APPLY UPDATE", idx, index)
                     self.ekf_slam.applyUpdate(x, P)
                 elif distance[index] > 1.0: #Unknown landmark! Do initialization
                 # else:
@@ -252,7 +249,7 @@ class LocalizationNode(object):
                                         PingerWithIDMeasurement.Jgxr(self.ekf_slam.xr(), PingerWithIDMeasurement.h([0,0,0], corner)),
                                         PingerWithIDMeasurement.Jgz(self.ekf_slam.xr(), PingerWithIDMeasurement.h([0,0,0], corner)), 
                                         self.ekf_slam.Rk)
-                    print("-----, ADD LANDMARK")
+                    ##print("-----, ADD LANDMARK")
 
             # self.ekf.update_position(Hk_list, Vk_list, Sk_list, Rk_list)
             self.new_laser = False
@@ -272,9 +269,9 @@ class LocalizationNode(object):
         #                     ns='map', color=(0, 1, 0))
 
         utilsFunc.publish_corners((self.ekf_slam.x()[3:]).reshape(self.ekf_slam.n_landmarks_, 2), self.pub_corners, frame='world', 
-                            scale=0.3, color=(1, 1, 0, 1))
+                            scale=0.18, color=(18/255, 91/255, 80/255, 1))
         
-        print('NUMBER OF LANDMARKS', self.ekf_slam.n_landmarks_, self.ekf_slam.Prr())
+        ##print('NUMBER OF LANDMARKS', self.ekf_slam.n_landmarks_, self.ekf_slam.Prr())
 
         # Get filter data
         # odom, ellipse, trans, rot, dummy = funcs.get_ekf_msgs(self.ekf)

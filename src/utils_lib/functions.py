@@ -102,7 +102,7 @@ def publish_corners(corners, pub, frame='world', ns='none', time=None,
         crn = Marker()
         crn.header.frame_id = frame
         crn.header.stamp = rospy.Time.now()
-        crn.type = crn.POINTS
+        crn.type = crn.SPHERE_LIST
         crn.action = crn.ADD
         crn.pose.position.x = 0.0
         crn.pose.position.y = 0.0
@@ -113,7 +113,7 @@ def publish_corners(corners, pub, frame='world', ns='none', time=None,
         crn.pose.orientation.w = 1.0
         crn.scale.x = scale
         crn.scale.y = scale
-        crn.scale.z = 0.0
+        crn.scale.z = 0.01
         c = ColorRGBA(color[0],color[1],color[2],color[3])
         crn.color = c
         for i in range(len(corners)):
