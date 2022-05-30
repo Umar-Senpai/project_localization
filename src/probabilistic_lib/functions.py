@@ -759,19 +759,19 @@ def publish_path(path, marker_pub, index):
         m.pose.orientation.w = 1
         
         color_red = ColorRGBA() # FOR GROUND TRUTH 
-        color_red.r = 247/255
-        color_red.g = 126/255
-        color_red.b = 33/255
+        color_red.r = 21/255
+        color_red.g = 114/255
+        color_red.b = 161/255
         color_red.a = 1
         color_blue = ColorRGBA() # FOR UPDATE EKF
-        color_blue.r = 47/255
-        color_blue.g = 143/255
-        color_blue.b = 157/255
+        color_blue.r = 54/255
+        color_blue.g = 174/255
+        color_blue.b = 124/255
         color_blue.a = 1
         color_green = ColorRGBA() # FOR PREDICTION
-        color_green.r = 127/255
-        color_green.g = 132/255
-        color_green.b = 135/255
+        color_green.r = 247/255
+        color_green.g = 126/255
+        color_green.b = 33/255
         color_green.a = 1
         #rgb(184, 241, 176)
         color_array = [color_red, color_blue, color_green]
