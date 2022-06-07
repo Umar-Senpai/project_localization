@@ -2,7 +2,7 @@ import numpy as np
 import math
 from utils import angle_wrap
 import probabilistic_lib.functions as funcs
-from PingerWithIDMeasurement import PingerWithIDMeasurement
+from CornerMeasurement import CornerMeasurement
 
 class EKFSlam:
     '''
@@ -326,7 +326,7 @@ class EKFSlam:
         for i in range(0, corners.shape[0]):
 
             # The polar lines are already in the robot frame
-            z = PingerWithIDMeasurement.h([0,0,0], corners[i]) #Converting Corners in distance and angle 
+            z = CornerMeasurement.h([0,0,0], corners[i]) #Converting Corners in distance and angle 
             # z = funcs.get_polar_line(corners[i],[0,0,0])
 
             # Variables for finding minimum
@@ -339,13 +339,13 @@ class EKFSlam:
                 # Compute matrices
                 #The Jacobian needs the polar line of the map in the world frame
                 # h = funcs.get_polar_line(self.map[j],[0,0,0])
-                h = PingerWithIDMeasurement.h(self.xr(), self.xl(j)) 
+                h = CornerMeasurement.h(self.xr(), self.xl(j)) 
                 # H = self.jacobianH(h,self.xk)
-                H = PingerWithIDMeasurement.Jhxr(self.xr(), self.xl(j))
+                H = CornerMeasurement.Jhxr(self.xr(), self.xl(j))
                 #Then for the innovation, the map line has to be in the robot frame
                 # h = funcs.get_polar_line(self.map[j],self.xk)
                 v = z - h
-                S = H @ self.Prr() @ np.transpose(H) + PingerWithIDMeasurement.Jhv() @ self.Rk @ np.transpose(PingerWithIDMeasurement.Jhv())
+                S = H @ self.Prr() @ np.transpose(H) + CornerMeasurement.Jhv() @ self.Rk @ np.transpose(CornerMeasurement.Jhv())
 
                 # Mahalanobis distance
                 D = np.transpose(v)@ np.linalg.inv(S) @v

@@ -22,7 +22,7 @@ import utils_lib.functions as utilsFunc
 # Extended Kalman Filter
 from ekf_localization import EKF
 from EKFSlamBase import EKFSlam
-from PingerWithIDMeasurement import PingerWithIDMeasurement
+from CornerMeasurement import CornerMeasurement
 
 
 # ==============================================================================
@@ -234,20 +234,20 @@ class LocalizationNode(object):
                     idx = associd[index]
                     xr = self.ekf_slam.xr()
                     xl = self.ekf_slam.xl(idx)
-                    [x, P] = self.ekf_slam.update(PingerWithIDMeasurement.h([0,0,0], corner),
+                    [x, P] = self.ekf_slam.update(CornerMeasurement.h([0,0,0], corner),
                                         self.ekf_slam.Rk,
                                         idx,
-                                        PingerWithIDMeasurement.h(xr, xl), 
-                                        PingerWithIDMeasurement.Jhxr(xr, xl),
-                                        PingerWithIDMeasurement.Jhxl(xr, xl),
-                                        PingerWithIDMeasurement.Jhv())
+                                        CornerMeasurement.h(xr, xl), 
+                                        CornerMeasurement.Jhxr(xr, xl),
+                                        CornerMeasurement.Jhxl(xr, xl),
+                                        CornerMeasurement.Jhv())
                     ##print("-----, APPLY UPDATE", idx, index)
                     self.ekf_slam.applyUpdate(x, P)
                 elif distance[index] > 1.0: #Unknown landmark! Do initialization
                 # else:
-                    idx = self.ekf_slam.add_landmark(PingerWithIDMeasurement.g(self.ekf_slam.xr(), PingerWithIDMeasurement.h([0,0,0], corner)),
-                                        PingerWithIDMeasurement.Jgxr(self.ekf_slam.xr(), PingerWithIDMeasurement.h([0,0,0], corner)),
-                                        PingerWithIDMeasurement.Jgz(self.ekf_slam.xr(), PingerWithIDMeasurement.h([0,0,0], corner)), 
+                    idx = self.ekf_slam.add_landmark(CornerMeasurement.g(self.ekf_slam.xr(), CornerMeasurement.h([0,0,0], corner)),
+                                        CornerMeasurement.Jgxr(self.ekf_slam.xr(), CornerMeasurement.h([0,0,0], corner)),
+                                        CornerMeasurement.Jgz(self.ekf_slam.xr(), CornerMeasurement.h([0,0,0], corner)), 
                                         self.ekf_slam.Rk)
                     ##print("-----, ADD LANDMARK")
 
