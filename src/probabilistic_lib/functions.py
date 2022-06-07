@@ -749,7 +749,7 @@ def publish_path(path, marker_pub, index):
         marker_pub.publish(m)
 
         m.action = Marker.ADD
-        m.scale.x = 0.1
+        m.scale.x = 0.05
         m.scale.y = 0.0
         m.scale.z = 0.0
         
@@ -758,21 +758,22 @@ def publish_path(path, marker_pub, index):
         m.pose.orientation.z = 0
         m.pose.orientation.w = 1
         
-        color_red = ColorRGBA()
-        color_red.r = 1
-        color_red.g = 0
-        color_red.b = 0
+        color_red = ColorRGBA() # FOR GROUND TRUTH 
+        color_red.r = 21/255
+        color_red.g = 114/255
+        color_red.b = 161/255
         color_red.a = 1
-        color_blue = ColorRGBA()
-        color_blue.r = 0
-        color_blue.g = 0
-        color_blue.b = 1
+        color_blue = ColorRGBA() # FOR UPDATE EKF
+        color_blue.r = 54/255
+        color_blue.g = 174/255
+        color_blue.b = 124/255
         color_blue.a = 1
-        color_green = ColorRGBA()
-        color_green.r = 0
-        color_green.g = 1
-        color_green.b = 0
+        color_green = ColorRGBA() # FOR PREDICTION
+        color_green.r = 247/255
+        color_green.g = 126/255
+        color_green.b = 33/255
         color_green.a = 1
+        #rgb(184, 241, 176)
         color_array = [color_red, color_blue, color_green]
 
         for n in path:

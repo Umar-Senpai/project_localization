@@ -2,7 +2,7 @@ import numpy as np
 import math
 from utils import angle_wrap
 import probabilistic_lib.functions as funcs
-from PingerWithIDMeasurement import PingerWithIDMeasurement
+from CornerMeasurement import CornerMeasurement
 
 class EKFSlam:
     '''
@@ -122,7 +122,7 @@ class EKFSlam:
 
     def Plm(self, idx):
         '''
-        return a numpy view of shape (s, n * s) representing a landmark-mark correlation matrix where n is the number of landmarks and s is the landmark size
+        return a numpy view of shape (s, n * s) representing a landmark-map correlation matrix where n is the number of landmarks and s is the landmark size
         Input:
             - idx: an integer representing the landmark position in the map
         '''
@@ -237,7 +237,7 @@ class EKFSlam:
             - x: np array of shape (3 + n*s,) representing the updated state
             - P: np matrix of shape (3 + n*s, 3 + n*s) representing the updated state covariance
         '''
-        print('______', self.n_landmarks_)
+        #print('______', self.n_landmarks_)
         self.x_[0:3 + self.n_landmarks_ * self.landmark_size_] = x
         self.P_[0:3 + self.n_landmarks_ * self.landmark_size_, 0:3 + self.n_landmarks_ * self.landmark_size_] = P
 
@@ -322,11 +322,11 @@ class EKFSlam:
 
 
         # For each observed line
-        print('\n-------- Associations --------')
+        #print('\n-------- Associations --------')
         for i in range(0, corners.shape[0]):
 
             # The polar lines are already in the robot frame
-            z = PingerWithIDMeasurement.h([0,0,0], corners[i])
+            z = CornerMeasurement.h([0,0,0], corners[i]) #Converting Corners in distance and angle 
             # z = funcs.get_polar_line(corners[i],[0,0,0])
 
             # Variables for finding minimum
@@ -339,22 +339,22 @@ class EKFSlam:
                 # Compute matrices
                 #The Jacobian needs the polar line of the map in the world frame
                 # h = funcs.get_polar_line(self.map[j],[0,0,0])
-                h = PingerWithIDMeasurement.h(self.xr(), self.xl(j)) 
+                h = CornerMeasurement.h(self.xr(), self.xl(j)) 
                 # H = self.jacobianH(h,self.xk)
-                H = PingerWithIDMeasurement.Jhxr(self.xr(), self.xl(j))
+                H = CornerMeasurement.Jhxr(self.xr(), self.xl(j))
                 #Then for the innovation, the map line has to be in the robot frame
                 # h = funcs.get_polar_line(self.map[j],self.xk)
                 v = z - h
-                S = H @ self.Prr() @ np.transpose(H) + PingerWithIDMeasurement.Jhv() @ self.Rk @ np.transpose(PingerWithIDMeasurement.Jhv())
+                S = H @ self.Prr() @ np.transpose(H) + CornerMeasurement.Jhv() @ self.Rk @ np.transpose(CornerMeasurement.Jhv())
 
                 # Mahalanobis distance
                 D = np.transpose(v)@ np.linalg.inv(S) @v
 
-                # Optional: Check if observed line is longer than map
+                # Optional: Check if observed corner is longer than map
                 ########################################################
                 islonger = False
 
-                # Check if the obseved line is the one with smallest
+                # Check if the obseved corner is the one with smallest
                 # mahalanobis distance
                 if np.sqrt(D) < minD and not islonger:
                      minj = j
@@ -366,9 +366,9 @@ class EKFSlam:
                      minD = D
 
             # Minimum distance below threshold
-            print('---- minD', minD)
+            #print('---- minD', minD)
             if minD < chi_thres:
-                 print("\t{} -> {}".format(minz, minh))
+                 #print("\t{} -> {}".format(minz, minh))
                  # Append results
                  associd[i] = minj
                  Hk_list.append(minH)
